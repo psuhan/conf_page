@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-#import lxml.etree as ET
+from lxml import etree
+from lxml.builder import ElementMaker
 import requests
 import requests_toolbelt
 import pickle
@@ -10,16 +11,41 @@ import json
 import logging
 import base64
 
+class conf_page(object):
+	##{{{
+	"""
+	Storage format container
+	"""
+	#__ROOT_TAG_HEAD__ = '<root xmlns:ac="confluence_macro">'
+	#__ROOT_TAG_TAIL__ = '</root>'
+
+	def __init__(self):
+		self.title = ''
+		self.space = ''
+		self.version = 1
+		self.page_id = 0
+		self.tree = ElementMaker(nsmap = {'ac':'confluence_macro'})('root')
+		self.macro1 = ElementMaker(namespace = 'confluence_macro').macro1
+		self.macro2 = ElementMaker(namespace = 'confluence_macro').macro2
+		self.macro3 = ElementMaker(namespace = 'confluence_macro').macro3
+
+	def define_dummy_ns(self, content):
+		return self.__ROOT_TAG_HEAD__ + content + self.__ROOT_TAG_TAIL__
+
+	def remove_root_tag(self, content):
+		return content[content.find(self.__ROOT_TAG_HEAD__) + len(self.__ROOT_TAG_HEAD__):content.find(self.__ROOT_TAG_TAIL__)]
+
+	def get_string(self):
+		return etree.tostring(self.tree)
+	##}}}
+
 class conf_rest_api(object):
+	##{{{
 	"""
-	create, modify and upload pages to Atlassian Confluence
-	itended to run on Linux
+	Access conflucence using REST api
 	"""
-
-	__ROOT_TAG_HEAD__ = '<root xmlns:ac="confluence_macro">'
-	__ROOT_TAG_TAIL__ = '</root>'
 	__PREVIOUS_SESSION_FOLDER__ = '.python_conf_page_previous_sessions'
-
+	
 	def __init__(self):
 		#self.headers = {'Content-Type': 'application/json'}
 		self.logged = False
@@ -59,12 +85,6 @@ class conf_rest_api(object):
 
 	def set_server(self, server):
 		self.server = server
-
-	def define_dummy_ns(self, content):
-		return self.__ROOT_TAG_HEAD__ + content + self.__ROOT_TAG_TAIL__
-
-	def remove_root_tag(self, content):
-		return content[content.find(self.__ROOT_TAG_HEAD__) + len(self.__ROOT_TAG_HEAD__):content.find(self.__ROOT_TAG_TAIL__)]
 
 	def do_login(self):
 		if not self.logged and not self.server == '':
@@ -162,10 +182,6 @@ class conf_rest_api(object):
 		else:
 			print 'cannot get respond from server'
 			return False
-
-	##def create_new_page_offline(self):
-	##	self.initialize()
-	##	self.page_tree = ET.fromstring(self.__ROOT_TAG_HEAD__ + self.__ROOT_TAG_TAIL__)
 
 	def delete_page(self, title, space):
 		if self.logged or self.do_login():
@@ -269,4 +285,4 @@ class conf_rest_api(object):
 				print 'cannot attach/update file'
 				#print dump.dump_all(res).decode('utf-8')
 				return False
-
+	##}}}
