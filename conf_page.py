@@ -13,6 +13,7 @@ import base64
 class page(object):
 	"""
 	create, modify and upload pages to Atlassian Confluence
+	itended to run on Linux
 	"""
 
 	__ROOT_TAG_HEAD__ = '<root xmlns:ac="confluence_macro">'
@@ -60,10 +61,10 @@ class page(object):
 	def set_rest_server(self, server):
 		self.rest_server = server
 
-	def __define_dummy_ns(self, content):
+	def define_dummy_ns(self, content):
 		return self.__ROOT_TAG_HEAD__ + content + self.__ROOT_TAG_TAIL__
 
-	def __remove_root_tag(self, content):
+	def remove_root_tag(self, content):
 		return content[content.find(self.__ROOT_TAG_HEAD__) + len(self.__ROOT_TAG_HEAD__):content.find(self.__ROOT_TAG_TAIL__)]
 
 	def do_login(self):
@@ -134,7 +135,7 @@ class page(object):
 				self.page_string = self.last_response_json['results'][0]['body']['storage']['value']
 				self.version = self.last_response_json['results'][0]['version']['number']
 				self.page_id = self.last_response_json['results'][0]['id']
-				self.page_tree = ET.fromstring(self.__define_dummy_ns(self.page_string))
+				self.page_tree = ET.fromstring(self.define_dummy_ns(self.page_string))
 				self.title = title
 				self.space = space
 				self.synced = True
@@ -182,7 +183,7 @@ class page(object):
 			if pid == None:
 				print 'parent page: {} does not exist'.format(parent)
 			else:
-				self.page_string = self.__remove_root_tag(ET.tostring(self.page_tree))
+				self.page_string = self.remove_root_tag(ET.tostring(self.page_tree))
 				#print self.page_string
 				data = {'title':		title,
 				        'space':		{'key': space},
