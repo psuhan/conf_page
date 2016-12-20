@@ -8,6 +8,7 @@ import os, sys
 import getpass
 import json
 import logging
+import base64
 
 class page(object):
 	"""
@@ -16,14 +17,14 @@ class page(object):
 
 	__ROOT_TAG_HEAD__ = '<root xmlns:ac="confluence_macro">'
 	__ROOT_TAG_TAIL__ = '</root>'
-	__PREVIOUS_SESSION_DATA__ = '.previous_session_data'
+	__PREVIOUS_SESSION_FOLDER__ = '.python_conf_page_previous_sessions'
 
 	def __init__(self):
 		#self.headers = {'Content-Type': 'application/json'}
-		self.__logged = False
+		self.logged = False
 		self.rest_server = ''
 		self.session=requests.session()
-		self.__PREVIOUS_SESSION_DATA__ = os.environ['HOME'] + '/' + self.__PREVIOUS_SESSION_DATA__
+		self.__PREVIOUS_SESSION_FOLDER__ = os.environ['HOME'] + '/' + self.__PREVIOUS_SESSION_FOLDER__
 		self.last_response_json = {}
 		self.initialize()
 
@@ -37,15 +38,24 @@ class page(object):
 		self.page_tree = None
 
 	def __del__(self):
-		self.save_session_id()
+		self.save_sessions()
 
-	def save_session_id(self):
-		if self.__logged:
-			with open(self.__PREVIOUS_SESSION_DATA__, 'w') as f:
+	def save_sessions(self):
+		if self.logged:
+			if os.path.isdir(self.__PREVIOUS_SESSION_FOLDER__):
+				logging.debug('dir: {} exists.'.format(self.__PREVIOUS_SESSION_FOLDER__))
+			else:
+				os.system('mkdir {}'.format(self.__PREVIOUS_SESSION_FOLDER__))
+				logging.debug('dir: {} created.'.format(self.__PREVIOUS_SESSION_FOLDER__))
+				if not os.path.isdir(self.__PREVIOUS_SESSION_FOLDER__):
+					print 'cannot create session data folder: {}'.format(self.__PREVIOUS_SESSION_FOLDER__)
+					return False
+			site_file_name = self.__PREVIOUS_SESSION_FOLDER__ + '/{}'.format(base64.b64encode(self.rest_server))
+			with open(site_file_name, 'w') as f:
 				cookies = self.session.cookies.get_dict()
-				session_data = {'JSESSIONID':cookies['JSESSIONID'], 'user_id':self.user_id}
+				session_data = {'user_id':self.user_id, 'cookies':cookies}
 				pickle.dump(session_data, f)
-			print 'session data saved to {}'.format(self.__PREVIOUS_SESSION_DATA__)
+				logging.debug('session data saved to {}'.format(site_file_name))
 
 	def set_rest_server(self, server):
 		self.rest_server = server
@@ -57,33 +67,43 @@ class page(object):
 		return content[content.find(self.__ROOT_TAG_HEAD__) + len(self.__ROOT_TAG_HEAD__):content.find(self.__ROOT_TAG_TAIL__)]
 
 	def do_login(self):
-		if os.path.isfile(self.__PREVIOUS_SESSION_DATA__):
+		if not self.logged and not self.rest_server == '':
 			print 'trying to continue previous session'
-			with open(self.__PREVIOUS_SESSION_DATA__, 'r') as f:
+		else:
+			logging.debug('alread logged in or server is not specified')
+			return False
+		site_file_name = self.__PREVIOUS_SESSION_FOLDER__ + '/{}'.format(base64.b64encode(self.rest_server))
+		if os.path.isfile(site_file_name):
+			with open(site_file_name, 'r') as f:
 				session_data = pickle.load(f)
-			self.session.cookies.update({'JSESSIONID':session_data['JSESSIONID']})
+			self.session.cookies.update(session_data['cookies'])
+			self.user_id = session_data['user_id']
 			ret = self.session.head(self.rest_server + '?')
-			if ret.status_code == 200 and ret.headers['X-AUSERNAME'] == session_data['user_id']:
+			#if ret.status_code == 200 and ret.headers['X-AUSERNAME'] == self.user_id:
+			if ret.status_code == 200 and 'X-AUSERNAME' in ret.headers and ret.headers['X-AUSERNAME'] == self.user_id:
 				print 'continuing previous session'
-				self.__logged = True
-				self.user_id = session_data['user_id']
+				self.logged = True
 				return True
 			else:
 				print 'login failed'
 				return False
 		else:
+			print 'no saved sessions for {}'.format(self.rest_server)
 			self.user_id = raw_input('Confluence user ID: ')
 			ret = self.session.head(self.rest_server + '?', auth=(self.user_id, getpass.getpass('password: ')))
-			if ret.status_code == 200 and ret.headers['X-AUSERNAME'] == self.user_id:
+			#if ret.status_code == 200 and ret.headers['X-AUSERNAME'] == self.user_id:
+			if ret.status_code == 200 and 'X-AUSERNAME' in ret.headers and ret.headers['X-AUSERNAME'] == self.user_id:
 				print 'logged in'
-				self.__logged = True
+				self.logged = True
 				return True
 			else:
+				print ret.headers
+				print ret.text
 				print 'login failed'
 				return False
 
 	def rest_api_get(self, url, args):
-		if self.__logged or self.do_login():
+		if self.logged or self.do_login():
 			exts = []
 			for (key, val) in args.items():
 				if type(val) == list:
@@ -100,7 +120,6 @@ class page(object):
 				print 'HTTP respond: {}'.format(ret.status_code)
 				return False
 		else:
-			print 'failed to login'
 			return False
 			
 	def get_page_from_server(self, title, space):
@@ -141,7 +160,7 @@ class page(object):
 				return self.last_response_json['results'][0]['id']
 
 	def delete_page(self, title, space):
-		if self.__logged or self.do_login():
+		if self.logged or self.do_login():
 			pid = self.get_page_id_from_title(title, space)
 			if not pid == False:
 				ret = self.session.delete(self.rest_server + '/{}'.format(pid))
@@ -181,25 +200,4 @@ class page(object):
 				else:
 					print 'HTTP status code: {}'.format(res.status_code)
 					print 'page upload failed'
-
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-#p = page()
-#p.set_rest_server('http://collab.lge.com/main/rest/api/content')
-#p.get_page_from_server('test_document', 'SICIPT')
-#print p.version
-#print p.page_string
-#print p.get_page_id_from_title('test_document', 'SICIPT')
-p2 = page()
-p2.set_rest_server('http://confluence.augkorea.org/rest/api/content')
-p2.delete_page('child1', 'PG')
-p2.delete_page('child2', 'PG')
-#p2.delete_page('test_document5', 'PG')
-#p2.delete_page('test_document6', 'PG')
-#p2.get_page_from_server('playground', 'PG')
-#p2.create_new_page_offline()
-#p = ET.SubElement(p2.page_tree, 'p')
-#p.text = 'new page'
-#p2.upload_page_to_web('test_document6', 'PG', 'playground')
-
-
 
