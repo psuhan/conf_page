@@ -41,7 +41,7 @@ class conf_page(object):
 	def get_string(self):
 		ret = ''
 		for child in self.tree:
-			ret = ret + etree(tostring(child))		
+			ret = ret + etree.tostring(child)		
 		#return etree.tostring(self.tree)
 		return ret
 	##}}}
