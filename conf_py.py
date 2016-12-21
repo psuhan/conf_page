@@ -36,7 +36,7 @@ class conf_page(object):
 		return content[content.find(self.__ROOT_TAG_HEAD__) + len(self.__ROOT_TAG_HEAD__):content.find(self.__ROOT_TAG_TAIL__)]
 
 		def import_string(self, string):
-		self.tree = etree.fromstring(self.define_dummy_ns(string))
+			self.tree = etree.fromstring(self.define_dummy_ns(string))
 
 		def get_string(self):
 			ret = ''
