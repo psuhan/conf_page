@@ -46,6 +46,21 @@ class conf_page(object):
 		return ret
 	##}}}
 
+	def add_table_row(self, table, row_data, row=1, head_row=False):
+		""" add new row to exsiting table """
+		table_list = []
+		for t in self.tree.iter('table'):
+			table_list.append(t)
+		if len(table_list) > table:
+			tbody = table_list[table].xpath('tbody')[0]
+			tr = etree.Element('tr')
+			tbody.insert(row, tr)
+			for text in row_data:
+				if head_row:
+					etree.SubElement(tr, 'th').text = str(text)
+				else:
+					etree.SubElement(tr, 'td').text = str(text)
+
 class conf_rest_api(object):
 	##{{{
 	"""
