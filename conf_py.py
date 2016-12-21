@@ -25,9 +25,9 @@ class conf_page(object):
 		self.version = 1
 		self.page_id = 0
 		self.tree = ElementMaker(nsmap = {'ac':'confluence_macro'})('root')
-		self.macro1 = ElementMaker(namespace = 'confluence_macro').macro1
-		self.macro2 = ElementMaker(namespace = 'confluence_macro').macro2
-		self.macro3 = ElementMaker(namespace = 'confluence_macro').macro3
+		#self.macro1 = ElementMaker(namespace = 'confluence_macro').macro1
+		#self.macro2 = ElementMaker(namespace = 'confluence_macro').macro2
+		#self.macro3 = ElementMaker(namespace = 'confluence_macro').macro3
 
 	def define_dummy_ns(self, content):
 		return self.__ROOT_TAG_HEAD__ + content + self.__ROOT_TAG_TAIL__
@@ -51,17 +51,20 @@ class conf_rest_api(object):
 		self.logged = False
 		self.server = ''
 		self.session=requests.session()
-		self.__PREVIOUS_SESSION_FOLDER__ = os.environ['HOME'] + '/' + self.__PREVIOUS_SESSION_FOLDER__
+		if os.name == 'nt': ## windows
+			self.__PREVIOUS_SESSION_FOLDER__ = os.environ['HOMEPATH'] + '/' + self.__PREVIOUS_SESSION_FOLDER__
+		elif os.name == 'posix':  ## linux
+			self.__PREVIOUS_SESSION_FOLDER__ = os.environ['HOME'] + '/' + self.__PREVIOUS_SESSION_FOLDER__
 		self.last_response_json = {}
-		self.initialize()
+		#self.initialize()
 
-	def initialize(self):
-		self.title = ''
-		self.space = ''
-		self.page_string = ''
-		self.page_version = 0
-		self.page_id = 0
-		#self.page_tree = None
+	#def initialize(self):
+	#	self.title = ''
+	#	self.space = ''
+	#	self.page_string = ''
+	#	self.page_version = 0
+	#	self.page_id = 0
+	#	#self.page_tree = None
 
 	def __del__(self):
 		self.save_sessions()
@@ -105,7 +108,9 @@ class conf_rest_api(object):
 				return True
 			else:
 				print 'login failed'
-				return False
+				logging.debug('deleting session data')
+				os.system('rm {}'.format(site_file_name))
+				return False	
 		else:
 			print 'no saved sessions for {}'.format(self.server)
 			self.user_id = raw_input('Confluence user ID: ')
@@ -171,12 +176,12 @@ class conf_rest_api(object):
 				print 'more than 2 pages returned'
 				return False
 			else:
-				self.page_string = self.last_response_json['results'][0]['body']['storage']['value']
-				self.version = self.last_response_json['results'][0]['version']['number']
-				self.page_id = self.last_response_json['results'][0]['id']
+				#self.page_string = self.last_response_json['results'][0]['body']['storage']['value']
+				#self.version = self.last_response_json['results'][0]['version']['number']
+				#self.page_id = self.last_response_json['results'][0]['id']
 				#self.page_tree = ET.fromstring(self.define_dummy_ns(self.page_string))
-				self.title = title
-				self.space = space
+				#self.title = title
+				#self.space = space
 				print 'page downloaded'
 				return True
 		else:
