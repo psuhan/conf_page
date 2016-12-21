@@ -53,7 +53,6 @@ class conf_rest_api(object):
 		self.session=requests.session()
 		if os.name == 'nt': ## windows
 			self.__PREVIOUS_SESSION_FOLDER__ = os.environ['HOMEDRIVE'] + os.environ['HOMEPATH'] + '\\' + self.__PREVIOUS_SESSION_FOLDER__
-                        #self.__PREVIOUS_SESSION_FOLDER__ = self.__PREVIOUS_SESSION_FOLDER__.replace('\\', '/')
 		elif os.name == 'posix':  ## linux
 			self.__PREVIOUS_SESSION_FOLDER__ = os.environ['HOME'] + '/' + self.__PREVIOUS_SESSION_FOLDER__
 		self.last_response_json = {}
@@ -70,13 +69,13 @@ class conf_rest_api(object):
 	def __del__(self):
 		self.save_sessions()
 
-        def site_file_name(self):
-            if os.name == 'nt':
-                return self.__PREVIOUS_SESSION_FOLDER__ + '\\{}'.format(base64.b64encode(self.server))
-            if os.name == 'posix':
-                return self.__PREVIOUS_SESSION_FOLDER__ + '/{}'.format(base64.b64encode(self.server))
-
-        def save_sessions(self):
+	def site_file_name(self):
+		if os.name == 'nt':
+			return self.__PREVIOUS_SESSION_FOLDER__ + '\\{}'.format(base64.b64encode(self.server))
+		if os.name == 'posix':
+			return self.__PREVIOUS_SESSION_FOLDER__ + '/{}'.format(base64.b64encode(self.server))
+	
+	def save_sessions(self):
 		if self.logged:
 			if os.path.isdir(self.__PREVIOUS_SESSION_FOLDER__):
 				logging.debug('dir: {} exists.'.format(self.__PREVIOUS_SESSION_FOLDER__))
@@ -112,6 +111,8 @@ class conf_rest_api(object):
 			if ret.status_code == 200 and 'X-AUSERNAME' in ret.headers and ret.headers['X-AUSERNAME'] == self.user_id:
 				print 'continuing previous session'
 				self.logged = True
+				logging.debug(ret.status_code)
+				logging.debug(ret.headers)
 				return True
 			else:
 				print 'login failed'
@@ -121,14 +122,16 @@ class conf_rest_api(object):
 		else:
 			print 'no saved sessions for {}'.format(self.server)
 			self.user_id = raw_input('Confluence user ID: ')
-			ret = self.session.head(self.server + '?', auth=(self.user_id, getpass.getpass('password: ')))
+			#ret = self.session.head(self.server + '?', auth=(self.user_id, getpass.getpass('password: ')))
+			ret = self.session.get(self.server + '?', auth=(self.user_id, getpass.getpass('password: ')))
 			if ret.status_code == 200 and 'X-AUSERNAME' in ret.headers and ret.headers['X-AUSERNAME'] == self.user_id:
 				print 'logged in'
 				self.logged = True
 				return True
 			else:
-				print ret.headers
-				print ret.text
+				logging.debug(ret.status_code)
+				logging.debug(ret.headers)
+				logging.debug(ret.text)
 				print 'login failed'
 				return False
 
@@ -217,15 +220,13 @@ class conf_rest_api(object):
 			#self.page_string = self.remove_root_tag(ET.tostring(self.page_tree))
 			if page_string == '': page_string = self.page_string
 			data = {'title':		title,
-			        'space':		{'key': space},
-			        'ancestors':	[{'id':pid}],
-			        'type':			'page',
-			        'body':			{'storage':{'value': page_string, 'representation':'storage'}}
+				'space':		{'key': space},
+				'ancestors':	[{'id':pid}],
+				'type':			'page',
+				'body':			{'storage':{'value': page_string, 'representation':'storage'}}
 			}
 			res = self.session.post(self.server, json=data)
 			if res.status_code == 200:
-				#self.title = title
-				#self.space = space
 				print 'page uploaded'
 				return True
 			else:
@@ -246,9 +247,9 @@ class conf_rest_api(object):
 			if page_string == '': page_string = self.page_string
 			ver = ver + 1
 			data = {'title':		title,
-			        'type':			'page',
-			        'body':			{'storage':{'value': page_string, 'representation':'storage'}},
-			        'version':		{'number': ver}
+				'type':			'page',
+				'body':			{'storage':{'value': page_string, 'representation':'storage'}},
+				'version':		{'number': ver}
 			}
 			res = self.session.put(self.server + '/{}'.format(pid), json=data)
 			if res.status_code == 200:
