@@ -52,7 +52,8 @@ class conf_rest_api(object):
 		self.server = ''
 		self.session=requests.session()
 		if os.name == 'nt': ## windows
-			self.__PREVIOUS_SESSION_FOLDER__ = os.environ['HOMEPATH'] + '/' + self.__PREVIOUS_SESSION_FOLDER__
+			self.__PREVIOUS_SESSION_FOLDER__ = os.environ['HOMEDRIVE'] + os.environ['HOMEPATH'] + '\\' + self.__PREVIOUS_SESSION_FOLDER__
+                        #self.__PREVIOUS_SESSION_FOLDER__ = self.__PREVIOUS_SESSION_FOLDER__.replace('\\', '/')
 		elif os.name == 'posix':  ## linux
 			self.__PREVIOUS_SESSION_FOLDER__ = os.environ['HOME'] + '/' + self.__PREVIOUS_SESSION_FOLDER__
 		self.last_response_json = {}
@@ -69,7 +70,13 @@ class conf_rest_api(object):
 	def __del__(self):
 		self.save_sessions()
 
-	def save_sessions(self):
+        def site_file_name(self):
+            if os.name == 'nt':
+                return self.__PREVIOUS_SESSION_FOLDER__ + '\\{}'.format(base64.b64encode(self.server))
+            if os.name == 'posix':
+                return self.__PREVIOUS_SESSION_FOLDER__ + '/{}'.format(base64.b64encode(self.server))
+
+        def save_sessions(self):
 		if self.logged:
 			if os.path.isdir(self.__PREVIOUS_SESSION_FOLDER__):
 				logging.debug('dir: {} exists.'.format(self.__PREVIOUS_SESSION_FOLDER__))
@@ -79,7 +86,7 @@ class conf_rest_api(object):
 				if not os.path.isdir(self.__PREVIOUS_SESSION_FOLDER__):
 					print 'cannot create session data folder: {}'.format(self.__PREVIOUS_SESSION_FOLDER__)
 					return False
-			site_file_name = self.__PREVIOUS_SESSION_FOLDER__ + '/{}'.format(base64.b64encode(self.server))
+			site_file_name = self.site_file_name()
 			with open(site_file_name, 'w') as f:
 				cookies = self.session.cookies.get_dict()
 				session_data = {'user_id':self.user_id, 'cookies':cookies}
@@ -95,7 +102,7 @@ class conf_rest_api(object):
 		else:
 			logging.debug('alread logged in or server is not specified')
 			return False
-		site_file_name = self.__PREVIOUS_SESSION_FOLDER__ + '/{}'.format(base64.b64encode(self.server))
+		site_file_name = self.site_file_name()
 		if os.path.isfile(site_file_name):
 			with open(site_file_name, 'r') as f:
 				session_data = pickle.load(f)
