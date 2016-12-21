@@ -39,12 +39,11 @@ class conf_page(object):
 		self.tree = etree.fromstring(self.define_dummy_ns(string))
 
         def get_string(self):
-                ret = ''
-                for child in self.tree:
-                        
-                        
-                #return self.remove_root_tag(etree.tostring(self.tree))
-                return etree.tostring(self.tree)
+			ret = ''
+        	for child in self.tree:
+				ret = ret + etree(tostring(child))        
+        	#return etree.tostring(self.tree)
+			return ret
 	##}}}
 
 class conf_rest_api(object):
