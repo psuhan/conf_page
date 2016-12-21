@@ -166,10 +166,10 @@ class conf_rest_api(object):
 		if self.rest_get(self.server, {'title':title, 'spaceKey':space}):
 			if self.last_response_json['size'] < 1:
 				print 'no page found titled: {} in space: {}'.format(title, space)
-				return False
+				return None
 			elif self.last_response_json['size'] > 1:
 				print 'more than 2 pages returned'
-				return False
+				return None
 			else:
 				return self.last_response_json['results'][0]['id']
 
