@@ -35,14 +35,14 @@ class conf_page(object):
 	def remove_root_tag(self, content):
 		return content[content.find(self.__ROOT_TAG_HEAD__) + len(self.__ROOT_TAG_HEAD__):content.find(self.__ROOT_TAG_TAIL__)]
 
-        def import_string(self, string):
+		def import_string(self, string):
 		self.tree = etree.fromstring(self.define_dummy_ns(string))
 
-        def get_string(self):
+		def get_string(self):
 			ret = ''
-        	for child in self.tree:
-				ret = ret + etree(tostring(child))        
-        	#return etree.tostring(self.tree)
+			for child in self.tree:
+				ret = ret + etree(tostring(child))		
+			#return etree.tostring(self.tree)
 			return ret
 	##}}}
 
@@ -193,9 +193,9 @@ class conf_rest_api(object):
 				print 'more than 2 pages returned'
 				return False
 			else:
-                                page = conf_page()
-                                page.title = title
-                                page.space = space
+				page = conf_page()
+				page.title = title
+				page.space = space
 				page.version = self.last_response_json['results'][0]['version']['number']
 				page.page_id = self.last_response_json['results'][0]['id']
 				page.import_string(self.last_response_json['results'][0]['body']['storage']['value'])
