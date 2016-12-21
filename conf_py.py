@@ -16,15 +16,15 @@ class conf_page(object):
 	"""
 	Storage format container
 	"""
-	#__ROOT_TAG_HEAD__ = '<root xmlns:ac="confluence_macro">'
-	#__ROOT_TAG_TAIL__ = '</root>'
+	__ROOT_TAG_HEAD__ = '<root xmlns:ac="confluence_macro">'
+	__ROOT_TAG_TAIL__ = '</root>'
 
 	def __init__(self):
 		self.title = ''
 		self.space = ''
 		self.version = 1
 		self.page_id = 0
-		self.tree = ElementMaker(nsmap = {'ac':'confluence_macro'})('root')
+		self.tree = None
 		#self.macro1 = ElementMaker(namespace = 'confluence_macro').macro1
 		#self.macro2 = ElementMaker(namespace = 'confluence_macro').macro2
 		#self.macro3 = ElementMaker(namespace = 'confluence_macro').macro3
@@ -35,8 +35,16 @@ class conf_page(object):
 	def remove_root_tag(self, content):
 		return content[content.find(self.__ROOT_TAG_HEAD__) + len(self.__ROOT_TAG_HEAD__):content.find(self.__ROOT_TAG_TAIL__)]
 
-	def get_string(self):
-		return etree.tostring(self.tree)
+        def import_string(self, string):
+		self.tree = etree.fromstring(self.define_dummy_ns(string))
+
+        def get_string(self):
+                ret = ''
+                for child in self.tree:
+                        
+                        
+                #return self.remove_root_tag(etree.tostring(self.tree))
+                return etree.tostring(self.tree)
 	##}}}
 
 class conf_rest_api(object):
@@ -186,14 +194,14 @@ class conf_rest_api(object):
 				print 'more than 2 pages returned'
 				return False
 			else:
-				#self.page_string = self.last_response_json['results'][0]['body']['storage']['value']
-				#self.version = self.last_response_json['results'][0]['version']['number']
-				#self.page_id = self.last_response_json['results'][0]['id']
-				#self.page_tree = ET.fromstring(self.define_dummy_ns(self.page_string))
-				#self.title = title
-				#self.space = space
+                                page = conf_page()
+                                page.title = title
+                                page.space = space
+				page.version = self.last_response_json['results'][0]['version']['number']
+				page.page_id = self.last_response_json['results'][0]['id']
+				page.import_string(self.last_response_json['results'][0]['body']['storage']['value'])
 				print 'page downloaded'
-				return True
+				return page
 		else:
 			print 'cannot get respond from server'
 			return False
@@ -253,10 +261,6 @@ class conf_rest_api(object):
 			}
 			res = self.session.put(self.server + '/{}'.format(pid), json=data)
 			if res.status_code == 200:
-				#self.title = title
-				#self.space = space
-				#self.version = ver
-				#self.page_id = pid
 				print 'page updated'
 				return True
 			else:
