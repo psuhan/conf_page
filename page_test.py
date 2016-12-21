@@ -28,8 +28,8 @@ def test2():
 		for t in tables[0].iter('tbody'):
 			pass
 		tr = etree.SubElement(t, 'tr')
-		td1 = etree.SubElement(tr, 'td').text = 'added'
-		td2 = etree.SubElement(tr, 'td').text = 'at'
+		td1 = etree.SubElement(tr, 'td').text = 'row added'
+		td2 = etree.SubElement(tr, 'td').text = 'automatically'
 		td3 = etree.SubElement(tr, 'td').text = time.asctime()
 		#etree.dump(page.tree)
 		p.update_page('playground', 'PG', page.get_string())
